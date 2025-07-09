@@ -12,6 +12,8 @@ namespace Technicolor.HarmonyPatches
     {
         private readonly LightColorizerManager _manager;
         private readonly Config _config;
+        private readonly ILightWithId[] _lights = new ILightWithId[1];
+        private readonly Color?[] _lightColors = new Color?[4];
 
         private TechniLights(LightColorizerManager manager, Config config)
         {
@@ -35,8 +37,10 @@ namespace Technicolor.HarmonyPatches
                 foreach (ILightWithId light in lightColorizer.Lights)
                 {
                     Color color = TechnicolorController.GetTechnicolor(warm, beatmapEventData.time + light.GetHashCode(), _config.TechnicolorLightsStyle);
-                    lightColorizer.Colorize(false, color, color, color, color);
-                    __instance.Refresh(true, new[] { light }, beatmapEventData);
+                    _lights[0] = light;
+                    UpdateLightColors(color);
+                    lightColorizer.Colorize(false, _lightColors);
+                    __instance.Refresh(true, _lights, beatmapEventData);
                 }
 
                 return false;
@@ -50,19 +54,28 @@ namespace Technicolor.HarmonyPatches
 
             {
                 Color color = TechnicolorController.GetTechnicolor(warm, beatmapEventData.time, _config.TechnicolorLightsStyle);
+                UpdateLightColors(color);
                 switch (_config.TechnicolorLightsGrouping)
                 {
                     case TechnicolorLightsGrouping.ISOLATED_GROUP:
-                        lightColorizer.Colorize(false, color, color, color, color);
+                        lightColorizer.Colorize(false, _lightColors);
                         break;
 
                     default:
-                        _manager.GlobalColorize(false, color, color, color, color);
+                        _manager.GlobalColorize(false, _lightColors);
                         break;
                 }
             }
 
             return true;
+        }
+
+        private void UpdateLightColors(Color? color)
+        {
+            _lightColors[0] = color;
+            _lightColors[1] = color;
+            _lightColors[2] = color;
+            _lightColors[3] = color;
         }
     }
 }

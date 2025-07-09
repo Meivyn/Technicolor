@@ -46,6 +46,8 @@ namespace Technicolor.Managers
         private readonly NoteColorizerManager _noteColorizerManager;
         private readonly BombColorizerManager _bombColorizerManager;
         private readonly BackgroundGradientColorizer _backgroundGradientColorizer;
+        private readonly ILightWithId[] _lights = new ILightWithId[1];
+        private readonly Color?[] _lightColors = new Color?[4];
 
         private readonly Color[] _leftSaberPalette = Array.Empty<Color>();
         private readonly Color[] _rightSaberPalette = Array.Empty<Color>();
@@ -219,11 +221,20 @@ namespace Technicolor.Managers
             UpdateTechnicolourEvent?.Invoke();
         }
 
+        private void UpdateLightColors(Color? leftColor, Color? rightColor)
+        {
+            _lightColors[0] = leftColor;
+            _lightColors[1] = rightColor;
+            _lightColors[2] = leftColor;
+            _lightColors[3] = rightColor;
+        }
+
         private void RainbowLights()
         {
             if (_config.TechnicolorLightsGrouping == TechnicolorLightsGrouping.ISOLATED)
             {
-                _lightColorizerManager.GlobalColorize(false, _gradientLeftColor, _gradientRightColor, _gradientLeftColor, _gradientRightColor);
+                UpdateLightColors(_gradientLeftColor, _gradientRightColor);
+                _lightColorizerManager.GlobalColorize(false, _lightColors);
                 foreach (LightColorizer lightColorizer in _lightColorizerManager.Colorizers.Values)
                 {
                     foreach (ILightWithId light in lightColorizer.Lights)
@@ -232,13 +243,16 @@ namespace Technicolor.Managers
                         seed *= 0.001f;
                         Color colorLeft = Color.HSVToRGB(Mathf.Repeat((Time.time * _timeMult) + _mismatchSpeedOffset + seed, 1f), 1f, 1f);
                         Color colorRight = Color.HSVToRGB(Mathf.Repeat((Time.time * _timeMult) + seed, 1f), 1f, 1f);
-                        lightColorizer.Colorize(new[] { light }, colorLeft, colorRight, colorLeft, colorRight);
+                        _lights[0] = light;
+                        UpdateLightColors(colorLeft, colorRight);
+                        lightColorizer.Colorize(_lights, _lightColors);
                     }
                 }
             }
             else
             {
-                _lightColorizerManager.GlobalColorize(true, _gradientLeftColor, _gradientRightColor, _gradientLeftColor, _gradientRightColor);
+                UpdateLightColors(_gradientLeftColor, _gradientRightColor);
+                _lightColorizerManager.GlobalColorize(true, _lightColors);
             }
         }
 
